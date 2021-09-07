@@ -1,0 +1,106 @@
+import numpy as np
+#import pandas as pd
+#import matplotlib.pyplot as plt
+from scipy.io import loadmat
+from scipy.optimize import minimize
+from  sklearn.metrics import  classification_report
+data=loadmat('D:/somebody/ex4data.mat')
+weight=loadmat('D:/somebody/ex4weights.mat')
+#some_idx=np.random.choice(np.arange(data['X'].shape[0]),100)     #show some pictures of hand writting number
+#some_images=data['X'][some_idx,:]
+#fig,ax_array=plt.subplots(nrows=10,ncols=10,sharey=True,sharex=True,figsize=(12,12))
+#for r in range(10):
+#    for c in range(10):
+#        ax_array[r,c].matshow(np.array(some_images[10*r+c].reshape((20,20))).T,cmap=matplotlib.cm.binary)
+#        plt.xticks(np.array([]))
+#        plt.yticks(np.array([]))
+#plt.show()
+def sigmoid(z):
+    return 1/(1+np.exp(-z))
+def cost(theta,X,y,learningRate):                                #cost function
+    theta=np.matrix(theta)
+    X=np.matrix(X)
+    y=np.matrix(y)
+    first=np.multiply(-y,np.log(sigmoid(X*theta.T)))
+    second=np.multiply((1-y),np.log(1-sigmoid(X*theta.T)))
+    reg=(learningRate/2*len(X))*np.sum(np.power(theta[:,1:theta.shape[1]],2))
+    return np.sum(first-second)/len(X)+reg
+def gradient(theta,X,y,learningRate):                            #gradient function
+    theta=np.reshape(theta,(X.shape[1],1))
+    X=np.matrix(X)
+    y=np.matrix(y)
+    error=sigmoid(X*theta)-y
+    theta[0,0]=0
+    grad=((X.T* error) / len(X)) + ((learningRate / len(X) * theta))
+    return np.array(grad).ravel()
+def one_vs_all(X,y,num_labels,learning_rate):
+    rows=X.shape[0]
+    params=X.shape[1]
+    all_theta=np.zeros((num_labels,params+1))
+    X=np.insert(X,0,values=np.ones(rows),axis=1)
+    for i in range(1,num_labels+1):
+        theta=np.zeros(params+1)
+        y_i=np.array([1 if label==i else 0 for label in y])    #select rows which fits with i and solve the value of theta separately for each row
+        y_i=np.reshape(y_i,(rows,1))
+        fmin=minimize(fun=cost,x0=theta,args=(X,y_i,learning_rate),method='TNC',jac=gradient)
+        all_theta[i-1,:]=fmin.x                       #obtain the value of theta
+    return all_theta
+def prediction(X,all_theta):
+    rows=X.shape[0]
+    X=np.insert(X,0,values=np.ones(rows),axis=1)
+    X=np.matrix(X)
+    print(X.shape)
+    all_theta=np.matrix(all_theta)
+    print(all_theta.shape)
+    h=sigmoid(X*all_theta.transpose())
+    h_argmax=np.argmax(h,axis=1)
+    h_argmax=h_argmax+1
+    return h_argmax
+#print(data['X'].shape)      #debug
+#print(data['y'].shape)
+all_theta=one_vs_all(data['X'],data['y'],10,1)
+#print(all_theta)
+y_prediction=prediction(data['X'],all_theta)
+print(classification_report(data['y'],y_prediction))
+#above is the method of using minimize function to get theta and below is the method which assumes weights are already given while using neural network
+theta1,theta2=weight['Theta1'],weight['Theta2']
+X2=np.matrix(np.insert(data['X'],0,values=np.ones(data['X'].shape[0]),axis=1))
+y2=np.matrix(data['y'])
+a2=sigmoid(X2*theta1.T)
+a2=np.insert(a2,0,values=np.ones(a2.shape[0]),axis=1)
+y_prediction2=np.argmax(sigmoid(a2*theta2.T),axis=1)+1
+print(classification_report(y2,y_prediction2))
+#below is the result of two methods,it shows the latter one could achieve better result, what we should do is calculate the number of weights
+#             precision    recall  f1-score   support
+#
+#           1       0.80      0.96      0.87       500
+#           2       0.92      0.65      0.76       500
+#           3       0.78      0.70      0.74       500
+#           4       0.86      0.76      0.81       500
+#           5       1.00      0.17      0.30       500
+#           6       0.63      0.94      0.75       500
+#           7       0.85      0.87      0.86       500
+#           8       0.55      0.90      0.68       500
+#           9       0.90      0.55      0.68       500
+#          10       0.69      0.96      0.80       500
+
+#    accuracy                           0.75      5000
+#   macro avg       0.80      0.75      0.73      5000
+# weighted avg       0.80      0.75      0.73      5000
+
+#            precision    recall  f1-score   support
+
+#           1       0.97      0.98      0.98       500
+#           2       0.98      0.97      0.98       500
+#           3       0.98      0.96      0.97       500
+#           4       0.97      0.97      0.97       500
+#           5       0.97      0.98      0.98       500
+#           6       0.98      0.99      0.98       500
+#           7       0.98      0.97      0.97       500
+#           8       0.98      0.98      0.98       500
+#           9       0.97      0.96      0.96       500
+#          10       0.98      0.99      0.99       500
+
+#    accuracy                           0.98      5000
+#   macro avg       0.98      0.98      0.98      5000
+#weighted avg       0.98      0.98      0.98      5000
