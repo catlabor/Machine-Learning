@@ -3,7 +3,7 @@ import numpy as np
 #import matplotlib.pyplot as plt
 from scipy.io import loadmat
 from scipy.optimize import minimize
-from  sklearn.metrics import  classification_report
+from sklearn.metrics import classification_report
 data=loadmat('D:/somebody/ex4data.mat')
 weight=loadmat('D:/somebody/ex4weights.mat')
 #some_idx=np.random.choice(np.arange(data['X'].shape[0]),100)     #show some pictures of hand writting number
